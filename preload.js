@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   onGoalReached: (cb) => ipcRenderer.on("goal-reached", (_, reached) => cb(reached)),
   onGoalInfo: (cb) => ipcRenderer.on("goal-info", (_, info) => cb(info)),
   onTimerComplete: (cb) => ipcRenderer.on("timer-complete", (_, minutes) => cb(minutes)),
+  onTargetUpdated: (cb) => ipcRenderer.on("target-updated", (_, minutes) => cb(minutes)),
   cancelTimer: () => ipcRenderer.send("cancel-timer"),
   startTimer: (minutes) => ipcRenderer.send("start-timer", minutes),
 });
