@@ -286,12 +286,33 @@ function buildTrayMenu() {
           applicationName: "Simple Focus Timer",
           applicationVersion: "1.0.0",
           version: "1.0.0",
-          copyright: "© 2025 BillingPie",
+          copyright: "© 2025 Kewal Kanojia",
           website: "https://github.com/kewal28/simple-focus-timer",
           iconPath,
-          credits: "A minimalist macOS menu bar focus timer with daily goal tracking.\nOpen Source: MIT License",
+          credits: `A minimalist macOS menu bar focus timer with daily goal tracking.
+
+Stay focused, build momentum, and achieve your goals with customizable focus sessions and intelligent progress tracking.
+
+Created by: Kewal Kanojia
+
+Features:
+• Customizable focus sessions (1-60 minutes)
+• Daily goal tracking with visual progress
+• Total productive time statistics
+• Menu bar integration
+• Focus completion notifications
+
+Open Source • MIT License
+
+Report a Bug: github.com/kewal28/simple-focus-timer/issues`,
         });
         app.showAboutPanel();
+      },
+    },
+    {
+      label: "Report a Bug",
+      click: () => {
+        shell.openExternal("https://github.com/kewal28/simple-focus-timer/issues/new");
       },
     },
     { type: "separator" },
