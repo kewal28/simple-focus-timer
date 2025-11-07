@@ -195,12 +195,22 @@
         // Show motivational message after first successful productive block
         window.electronAPI?.onGoalInfo((info) => {
             // Don't override the final message when all goals reached
-            if (isRunning || info?.reached) return;
+            if (isRunning) return;
             const done = Number(info?.done || 0);
             const dailyGoal = Number(info?.dailyGoal || 0);
             const remaining = Math.max(0, Number(info?.remaining ?? Math.max(0, dailyGoal - done)));
+            const reached = info?.reached || false;
+            const formattedTime = info?.formattedTime || '';
+            
+            // When daily goal is reached, show productive time
+            if (reached && formattedTime) {
+                txt.textContent = 'Great!!';
+                subtitle.textContent = `You were productive for ${formattedTime} today`;
+                subtitle.classList.remove('hidden');
+                quickStart.classList.remove('hidden');
+            }
             // After the first completed productive block (and not yet done for the day)
-            if (done === 1 && dailyGoal > 1) {
+            else if (done === 1 && dailyGoal > 1) {
                 txt.textContent = 'Great!!';
                 subtitle.textContent = `only ${remaining} is left in target`;
                 subtitle.classList.remove('hidden');

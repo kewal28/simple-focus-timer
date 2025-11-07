@@ -129,11 +129,28 @@ function doneToday() {
   return store.get(`counts.${todayKey()}`, 0) || 0;
 }
 
+function productiveTimeToday() {
+  return store.get(`productiveTime.${todayKey()}`, 0) || 0;
+}
+
+function formatProductiveTime(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) {
+    return `${minutes} min`;
+  }
+  const hours = (minutes / 60).toFixed(2);
+  return `${hours} hour${hours !== "1.00" ? "s" : ""}`;
+}
+
 function incIfProductive() {
   const prod = store.get("productiveBlockMinutes", 60);
   if (selectedMinutes === prod) {
     const k = `counts.${todayKey()}`;
     store.set(k, doneToday() + 1);
+    // Track total productive time in seconds
+    const timeKey = `productiveTime.${todayKey()}`;
+    const currentTime = store.get(timeKey, 0) || 0;
+    store.set(timeKey, currentTime + (selectedMinutes * 60));
     checkAndNotifyGoal();
   }
 }
@@ -142,6 +159,9 @@ function checkAndNotifyGoal() {
   const dailyGoal = store.get("dailyGoal", 4);
   const done = doneToday();
   const reached = done >= dailyGoal;
+  const productiveTime = productiveTimeToday();
+  const formattedTime = formatProductiveTime(productiveTime);
+  
   safeSend("goal-reached", reached);
   // Also send detailed goal info for motivational UI
   safeSend("goal-info", {
@@ -149,6 +169,8 @@ function checkAndNotifyGoal() {
     dailyGoal,
     reached,
     remaining: Math.max(0, dailyGoal - done),
+    productiveTime,
+    formattedTime,
   });
   return reached;
 }
@@ -211,8 +233,17 @@ function cancelTimer() {
 }
 
 function setProductiveBlock(m) {
+  const oldBlock = store.get("productiveBlockMinutes", 60);
+  // If user changes productive block, reset today's count and time
+  if (oldBlock !== m) {
+    const k = `counts.${todayKey()}`;
+    const timeKey = `productiveTime.${todayKey()}`;
+    store.set(k, 0);
+    store.set(timeKey, 0);
+  }
   store.set("productiveBlockMinutes", m);
   updateTrayMenu();
+  checkAndNotifyGoal();
 }
 
 function setDailyGoal(g) {

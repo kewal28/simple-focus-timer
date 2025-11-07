@@ -16,10 +16,15 @@
 - **Menu Bar Integration**: Lives in your macOS menu bar - always accessible, never intrusive
 - **Focus Sessions**: Quick-start timers for 1, 5, 30, or 60 minutes
 - **Daily Goal Tracking**: Set and track your daily focus goals (1-10 sessions)
+- **Smart Progress Tracking**: 
+  - Only counts completed productive block sessions toward your goal
+  - Automatically resets progress when you change productive block duration
+  - Shows total productive time when daily goal is achieved
 - **Productive Block Settings**: Define what counts as a productive block
+- **Intelligent Time Display**: Shows minutes for short sessions, hours with decimals for longer ones
 - **Clean UI**: Minimalist floating window shows your timer
 - **In-Window Cancel**: Cancel running timers directly from the timer window
-- **Goal Celebration**: Visual feedback when you complete your daily goal
+- **Goal Celebration**: Visual feedback with total productive time when you complete your daily goal
 - **No Dock Icon**: Pure menu bar app - doesn't clutter your dock
 
 ## 📸 Screenshots
@@ -104,11 +109,17 @@ The built `.dmg` file will be in the `dist/` directory.
 3. Select which timer duration counts toward your daily goal
 4. Only completed sessions of this duration will count
 
+**Important:** When you change your productive block duration, your daily progress resets automatically. This prevents incorrect totals (e.g., 5 completed 1-minute sessions won't incorrectly show as 5 hours if you switch to 1-hour blocks).
+
 ### Understanding Progress
 
 - Menu bar displays: `current/goal` (e.g., "3/4")
-- Complete your daily goal to see a celebration message!
-- Progress resets daily at midnight
+- Complete your daily goal to see a celebration message with your total productive time!
+- Time display format:
+  - **Less than 60 minutes**: Shows in minutes (e.g., "45 min")
+  - **60+ minutes**: Shows in hours with decimals (e.g., "1.50 hours", "0.10 hour")
+- Progress and time tracking reset daily at midnight
+- Changing productive block duration resets the day's progress
 
 ## 🔧 Configuration
 
@@ -120,6 +131,7 @@ Settings are stored locally using `electron-store`:
 - Daily goal (default: 4)
 - Productive block minutes (default: 60)
 - Daily completion counts (historical data)
+- Daily productive time in seconds (historical data)
 
 ## 🎨 Customization
 
