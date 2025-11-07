@@ -130,6 +130,7 @@
 
         let isRunning = false;
         let dailyGoalReached = false;
+        let currentTarget = 60; // Default target
 
         function fmt(s) {
             const m = String(Math.floor(s / 60)).padStart(2, '0');
@@ -243,6 +244,22 @@
         window.electronAPI?.onTimerComplete((minutes) => {
             // Only chime if not canceled and the window is visible
             playCompletionSound();
+        });
+
+        // Listen for target updates from menu
+        window.electronAPI?.onTargetUpdated((minutes) => {
+            currentTarget = minutes;
+            // Update UI if not running
+            if (!isRunning) {
+                txt.textContent = 'Ready';
+                subtitle.textContent = `New target: ${minutes} min blocks`;
+                subtitle.classList.remove('hidden');
+                quickStart.classList.remove('hidden');
+                setTimeout(() => {
+                    txt.textContent = 'Ready';
+                    subtitle.textContent = 'Start a productive day';
+                }, 2000);
+            }
         });
     </script>
 </body>

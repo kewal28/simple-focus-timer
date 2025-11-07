@@ -114,6 +114,9 @@ function createWindow() {
   win.webContents.on("did-finish-load", () => {
     safeSend("tick", 0);
     checkAndNotifyGoal();
+    // Send current productive block target to window
+    const currentTarget = store.get("productiveBlockMinutes", 60);
+    safeSend("target-updated", currentTarget);
   });
 
   win.on("closed", () => {
@@ -147,7 +150,7 @@ function incIfProductive() {
   if (selectedMinutes === prod) {
     const k = `counts.${todayKey()}`;
     store.set(k, doneToday() + 1);
-    // Track total productive time in seconds
+    // Track total productive time in seconds - use actual completed time
     const timeKey = `productiveTime.${todayKey()}`;
     const currentTime = store.get(timeKey, 0) || 0;
     store.set(timeKey, currentTime + (selectedMinutes * 60));
@@ -234,16 +237,17 @@ function cancelTimer() {
 
 function setProductiveBlock(m) {
   const oldBlock = store.get("productiveBlockMinutes", 60);
-  // If user changes productive block, reset today's count and time
+  // If user changes productive block, reset today's count but keep total productive time
   if (oldBlock !== m) {
     const k = `counts.${todayKey()}`;
-    const timeKey = `productiveTime.${todayKey()}`;
     store.set(k, 0);
-    store.set(timeKey, 0);
+    // Don't reset productive time - it tracks actual work done
   }
   store.set("productiveBlockMinutes", m);
   updateTrayMenu();
   checkAndNotifyGoal();
+  // Send updated target to popup window
+  safeSend("target-updated", m);
 }
 
 function setDailyGoal(g) {
