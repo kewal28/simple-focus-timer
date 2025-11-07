@@ -1,0 +1,240 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Simple Focus Timer</title>
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+            padding: 10px;
+        }
+
+        .timer {
+            font-size: 42px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            margin-bottom: 3px;
+        }
+
+        .subtitle {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 3px;
+            margin-bottom: 10px;
+        }
+
+        .quick-start-container {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            width: 100%;
+            max-width: 220px;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+        }
+
+        .timer-btn {
+            flex: 1;
+            padding: 8px 0;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 6px;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 45px;
+        }
+
+        .timer-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .timer-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .cancel-btn {
+            margin-top: 6px;
+            padding: 8px 25px;
+            background: rgba(255, 59, 48, 0.8);
+            border: 1px solid rgba(255, 59, 48, 1);
+            border-radius: 6px;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .cancel-btn:hover {
+            background: rgba(255, 59, 48, 0.9);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(255, 59, 48, 0.3);
+        }
+
+        .cancel-btn:active {
+            transform: translateY(0);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="timer" id="txt">Ready</div>
+    <div class="subtitle" id="subtitle">Start a productive day</div>
+    
+    <div class="quick-start-container" id="quickStart">
+        <div class="button-row">
+            <button class="timer-btn" onclick="startTimer(1)">1m</button>
+            <button class="timer-btn" onclick="startTimer(10)">10m</button>
+            <button class="timer-btn" onclick="startTimer(60)">60m</button>
+        </div>
+    </div>
+
+    <button class="cancel-btn hidden" id="cancelBtn">Cancel</button>
+
+    <script>
+        const txt = document.getElementById('txt');
+        const subtitle = document.getElementById('subtitle');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const quickStart = document.getElementById('quickStart');
+
+        let isRunning = false;
+        let dailyGoalReached = false;
+
+        function fmt(s) {
+            const m = String(Math.floor(s / 60)).padStart(2, '0');
+            const ss = String(s % 60).padStart(2, '0');
+            return `${m}:${ss}`;
+        }
+
+        function startTimer(minutes) {
+            window.electronAPI?.startTimer(minutes);
+        }
+
+        cancelBtn.addEventListener('click', () => {
+            window.electronAPI?.cancelTimer();
+        });
+
+        window.electronAPI?.onTick((s) => {
+            if (s <= 0) {
+                txt.textContent = 'Ready';
+                subtitle.textContent = 'Start a productive day';
+                subtitle.classList.remove('hidden');
+                quickStart.classList.remove('hidden');
+                cancelBtn.classList.add('hidden');
+                isRunning = false;
+            } else if (s > 0) {
+                txt.textContent = fmt(s);
+                subtitle.classList.add('hidden');
+                quickStart.classList.add('hidden');
+                cancelBtn.classList.remove('hidden');
+                isRunning = true;
+            } else {
+                txt.textContent = 'Ready';
+                subtitle.textContent = 'Start a productive day';
+                subtitle.classList.remove('hidden');
+                quickStart.classList.remove('hidden');
+                cancelBtn.classList.add('hidden');
+                isRunning = false;
+            }
+        });
+
+        window.electronAPI?.onCancelled(() => {
+            txt.textContent = 'Canceled';
+            subtitle.classList.add('hidden');
+            quickStart.classList.add('hidden');
+            cancelBtn.classList.add('hidden');
+            isRunning = false;
+            setTimeout(() => {
+                txt.textContent = 'Ready';
+                subtitle.textContent = 'Start a productive day';
+                subtitle.classList.remove('hidden');
+                quickStart.classList.remove('hidden');
+            }, 2000);
+        });
+
+        window.electronAPI?.onGoalReached((reached) => {
+            if (reached && !isRunning) {
+                txt.textContent = 'Great!!';
+                subtitle.textContent = 'Today goal is done';
+                subtitle.classList.remove('hidden');
+                quickStart.classList.remove('hidden');
+            }
+        });
+
+        // Show motivational message after first successful productive block
+        window.electronAPI?.onGoalInfo((info) => {
+            // Don't override the final message when all goals reached
+            if (isRunning || info?.reached) return;
+            const done = Number(info?.done || 0);
+            const dailyGoal = Number(info?.dailyGoal || 0);
+            const remaining = Math.max(0, Number(info?.remaining ?? Math.max(0, dailyGoal - done)));
+            // After the first completed productive block (and not yet done for the day)
+            if (done === 1 && dailyGoal > 1) {
+                txt.textContent = 'Great!!';
+                subtitle.textContent = `only ${remaining} is left in target`;
+                subtitle.classList.remove('hidden');
+                quickStart.classList.remove('hidden');
+            }
+        });
+
+        // Play a short chime when a timer completes successfully
+        function playCompletionSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const o = ctx.createOscillator();
+                const g = ctx.createGain();
+                // Pleasant two-tone: start higher then glide down a bit
+                o.type = 'sine';
+                o.frequency.setValueAtTime(880, ctx.currentTime); // A5
+                o.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.25); // E5
+                g.gain.setValueAtTime(0.001, ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.02);
+                g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
+                o.connect(g);
+                g.connect(ctx.destination);
+                o.start();
+                o.stop(ctx.currentTime + 0.55);
+            } catch (e) {
+                // ignore
+            }
+        }
+
+        window.electronAPI?.onTimerComplete((minutes) => {
+            // Only chime if not canceled and the window is visible
+            playCompletionSound();
+        });
+    </script>
+</body>
+
+</html>

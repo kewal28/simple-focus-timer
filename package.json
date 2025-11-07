@@ -1,0 +1,48 @@
+{
+  "name": "simple-focus-timer",
+  "productName": "Simple Focus Timer",
+  "version": "1.0.0",
+  "description": "A minimalist macOS menu bar focus timer with daily goal tracking",
+  "main": "main.js",
+  "author": "BillingPie",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kewal28/simple-focus-timer"
+  },
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --mac dmg"
+  },
+  "devDependencies": {
+    "electron": "^32",
+    "electron-builder": "^25"
+  },
+  "build": {
+    "appId": "com.billingpie.focus",
+    "productName": "Simple Focus Timer",
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": "dmg",
+      "icon": "icon.png",
+      "extendInfo": {
+        "LSUIElement": 1
+      }
+    },
+    "files": [
+      "**/*",
+      "!dist",
+      "!node_modules/.cache",
+      "!README.md",
+      "!LICENSE",
+      "!.git"
+    ],
+    "dmg": {
+      "title": "Simple Focus Timer",
+      "icon": "icon.png"
+    }
+  },
+  "dependencies": {
+    "electron-store": "^8.2.0"
+  }
+}

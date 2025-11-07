@@ -1,0 +1,31 @@
+<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Gradient Background -->
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Rounded Rectangle Background -->
+  <rect width="512" height="512" rx="115" fill="url(#grad)"/>
+  
+  <!-- Clock Circle -->
+  <circle cx="256" cy="256" r="140" fill="none" stroke="white" stroke-width="20"/>
+  
+  <!-- Clock Hands -->
+  <!-- Hour Hand -->
+  <line x1="256" y1="256" x2="256" y2="180" stroke="white" stroke-width="16" stroke-linecap="round"/>
+  
+  <!-- Minute Hand -->
+  <line x1="256" y1="256" x2="316" y2="256" stroke="white" stroke-width="12" stroke-linecap="round"/>
+  
+  <!-- Center Dot -->
+  <circle cx="256" cy="256" r="12" fill="white"/>
+  
+  <!-- Focus Indicator (small dots at 12, 3, 6, 9) -->
+  <circle cx="256" cy="96" r="8" fill="white"/>
+  <circle cx="416" cy="256" r="8" fill="white"/>
+  <circle cx="256" cy="416" r="8" fill="white"/>
+  <circle cx="96" cy="256" r="8" fill="white"/>
+</svg>
