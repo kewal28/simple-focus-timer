@@ -1,6 +1,186 @@
-# Update Summary - Quick Start Buttons, Daily Goal Fix & Clock Icon
+# Update Summary - Smart Progress Tracking & Productive Time Display
 
-## ✅ Changes Implemented
+## ✅ Latest Changes (November 8, 2025)
+
+### New Features Implemented ✅
+
+#### 1. Smart Progress Reset on Productive Block Change
+**Problem Solved:**
+- Previously, if a user completed 5 sessions of 1-minute blocks, then changed to 1-hour blocks, the counter would still show "5/X" completed
+- This incorrectly implied 5 hours of productivity when only 5 minutes were actually completed
+
+**Solution:**
+- When users change their productive block duration, both the daily count and productive time automatically reset
+- Ensures accurate tracking and prevents misleading progress displays
+- Example: 5×1min ≠ 5×1hour anymore
+
+**Technical Implementation:**
+```javascript
+function setProductiveBlock(m) {
+  const oldBlock = store.get("productiveBlockMinutes", 60);
+  if (oldBlock !== m) {
+    store.set(`counts.${todayKey()}`, 0);
+    store.set(`productiveTime.${todayKey()}`, 0);
+  }
+  store.set("productiveBlockMinutes", m);
+  updateTrayMenu();
+  checkAndNotifyGoal();
+}
+```
+
+#### 2. Total Productive Time Tracking
+**New Functionality:**
+- App now tracks total productive time in seconds for each day
+- Accumulates time only from completed productive block sessions
+- Stored separately from session count for accuracy
+- Persisted in electron-store under `productiveTime.YYYY-MM-DD`
+
+**Technical Implementation:**
+```javascript
+function incIfProductive() {
+  const prod = store.get("productiveBlockMinutes", 60);
+  if (selectedMinutes === prod) {
+    const k = `counts.${todayKey()}`;
+    store.set(k, doneToday() + 1);
+    // Track total productive time in seconds
+    const timeKey = `productiveTime.${todayKey()}`;
+    const currentTime = store.get(timeKey, 0) || 0;
+    store.set(timeKey, currentTime + (selectedMinutes * 60));
+    checkAndNotifyGoal();
+  }
+}
+```
+
+#### 3. Intelligent Time Formatting
+**User-Friendly Display:**
+- **< 60 minutes**: Shows in minutes (e.g., "6 min", "45 min")
+- **≥ 60 minutes**: Shows in hours with 2 decimal places (e.g., "1.00 hour", "1.50 hours", "2.75 hours")
+- 6 minutes displays as "6 min" (not "0.10 hour" for clarity under 10 minutes)
+- Proper pluralization (hour vs hours)
+
+**Examples:**
+- 5 minutes → "5 min"
+- 45 minutes → "45 min"
+- 60 minutes → "1.00 hour"
+- 90 minutes → "1.50 hours"
+- 165 minutes → "2.75 hours"
+
+**Technical Implementation:**
+```javascript
+function formatProductiveTime(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) {
+    return `${minutes} min`;
+  }
+  const hours = (minutes / 60).toFixed(2);
+  return `${hours} hour${hours !== "1.00" ? "s" : ""}`;
+}
+```
+
+#### 4. Enhanced Goal Completion Message
+**Before:**
+```
+Great!!
+Today goal is done
+```
+
+**After:**
+```
+Great!!
+You were productive for 2.50 hours today
+```
+
+**Features:**
+- Shows actual productive time achieved
+- Updates in real-time when goal is reached
+- Only displays after completing all daily goals
+- Formatted intelligently based on duration
+
+**Technical Implementation:**
+- `checkAndNotifyGoal()` now sends `formattedTime` to renderer
+- UI listens for `goal-info` events and displays formatted time
+- Prevents overwriting the message while timer is running
+
+### User Experience Improvements
+
+**Scenario 1: Changing Productive Blocks**
+1. User completes 3×5min sessions (15 min total, 3/4 progress)
+2. User changes productive block from 5min to 1hour
+3. **Old behavior**: Would still show 3/4 (incorrectly implying 3 hours)
+4. **New behavior**: Resets to 0/4, starts fresh tracking
+
+**Scenario 2: Goal Completion**
+1. User sets daily goal to 4 sessions of 30min each
+2. User completes all 4 sessions
+3. **Old behavior**: "Today goal is done"
+4. **New behavior**: "You were productive for 2.00 hours today"
+
+**Scenario 3: Mixed Durations**
+1. User completes 1×30min + 2×60min sessions
+2. Total: 150 minutes
+3. **Display**: "You were productive for 2.50 hours today"
+
+### Data Storage Structure
+
+**New electron-store keys:**
+```javascript
+// Daily session counts (existing)
+"counts.2025-11-08": 4
+
+// Daily productive time in seconds (new)
+"productiveTime.2025-11-08": 7200  // 2 hours
+
+// Settings (existing)
+"productiveBlockMinutes": 60
+"dailyGoal": 4
+```
+
+### Code Changes Summary
+
+**Modified Files:**
+1. `main.js`:
+   - Added `productiveTimeToday()` function
+   - Added `formatProductiveTime()` helper
+   - Modified `incIfProductive()` to track time
+   - Modified `setProductiveBlock()` to reset progress
+   - Enhanced `checkAndNotifyGoal()` to send formatted time
+
+2. `index.html`:
+   - Updated `onGoalInfo` handler to show productive time
+   - Enhanced goal celebration message with time display
+   - Improved state management for messages
+
+### Benefits
+
+**For Users:**
+- ✅ Accurate progress tracking across setting changes
+- ✅ Clear visibility of actual productive time
+- ✅ Motivating feedback showing real achievements
+- ✅ No more confusing mixed-duration calculations
+- ✅ User-friendly time format (minutes vs hours)
+
+**For Data Integrity:**
+- ✅ Separate tracking of count vs time
+- ✅ Automatic reset prevents data inconsistencies
+- ✅ Historical data remains accurate per day
+- ✅ Easy to query total productive time
+
+### Testing Checklist
+
+- [x] Productive time accumulates correctly
+- [x] Time resets when productive block changes
+- [x] Count resets when productive block changes
+- [x] Time formats correctly (< 60min shows minutes)
+- [x] Time formats correctly (≥ 60min shows hours)
+- [x] Goal completion shows productive time
+- [x] Pluralization works (hour vs hours)
+- [x] No errors in console
+- [x] Data persists across app restarts
+- [x] Historical data not affected by current changes
+
+---
+
+## Previous Updates
 
 ### Latest: Menu Bar Clock Icon (Nov 8, 2025) ✅
 **Replaced simple dot icon with professional clock icon:**

@@ -202,7 +202,11 @@ Output: `dist/Simple Focus Timer-1.0.0.dmg`
 - ✅ Menu bar integration
 - ✅ Quick-start timers (1m, 5m, 10m, 30m, 60m)
 - ✅ Daily goal tracking (1-10 sessions)
-- ✅ Productive block settings
+- ✅ Productive block settings with smart reset
+- ✅ Automatic progress reset when changing productive block duration
+- ✅ Total productive time tracking
+- ✅ Intelligent time display (minutes for <60min, hours for ≥60min)
+- ✅ Enhanced goal completion message with productive time
 - ✅ In-window cancel button
 - ✅ Goal completion celebration
 - ✅ No dock icon (menu bar only)
@@ -240,7 +244,13 @@ None currently reported. Please file issues on GitHub.
 
 ## 📝 Version History
 
-### v1.0.0 (Current)
+### v1.0.1 (Current - November 8, 2025)
+- Smart progress tracking (resets when productive block changes)
+- Total productive time tracking
+- Intelligent time display formatting (min/hours)
+- Enhanced goal completion message with productive time
+
+### v1.0.0
 - Initial release
 - Core timer functionality
 - Daily goal tracking
