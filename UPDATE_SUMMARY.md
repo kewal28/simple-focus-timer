@@ -1,5 +1,26 @@
 # Update Summary - Smart Progress Tracking & Productive Time Display
 
+## Latest Changes (November 10, 2025)
+
+### Weekly Progress UI Improvements
+- Redesigned day cards for clarity: values appear first in a large, bold style, with compact uppercase labels below.
+- Tightened spacing across cards and the stats grid to reduce empty gaps and improve information density.
+- Increased stat icon size to 22px and switched from emojis to inline SVG icons for consistent rendering on all systems.
+- Added a centered, fixed-width container so the weekly view doesn’t stretch awkwardly on large windows.
+- Added a top summary with Total Sessions, Goals Met, and Productive Time; included a motivation card with dynamic messages based on weekly performance.
+- Polished visuals: better gradient coverage, subtle shadows, and refined scrollbar styling.
+
+### Weekly Data Accuracy Fixes
+- Past-day “Block” duration now uses that day’s stored snapshot. If a snapshot is missing, the app carries forward the last known value; only today falls back to the current setting. This fixes cases like “60 min showing as 1 min” for previous days.
+- On date rollover, the app snapshots the new day’s productive block and daily goal to preserve accurate history for the weekly view.
+- Count and productive time logic remain unchanged and continue to use completed sessions only.
+
+### How to Validate
+1. Change your productive block (e.g., 60 → 1) and complete sessions across two days.
+2. Open Weekly Progress: yesterday’s card should still show “Block: 60m,” while today reflects the new setting.
+3. Verify day cards show large numbers (values) and smaller labels, with tighter spacing and visible SVG icons.
+
+
 ## ✅ Latest Changes (November 8, 2025)
 
 ### New Features Implemented ✅
