@@ -32,6 +32,11 @@ function checkDateRollover(force = false) {
   const today = todayKey();
   if (force || today !== currentDateKey) {
     currentDateKey = today;
+    // Snapshot today's targets for history so weekly view doesn't rely on current fallback
+    try {
+      store.set(`productiveBlocks.${today}`, store.get('productiveBlockMinutes', 60));
+      store.set(`dailyGoals.${today}`, store.get('dailyGoal', 4));
+    } catch {}
     // Notify renderer of day change
     safeSend("day-changed", { date: today });
     // Recompute goal info for new day
