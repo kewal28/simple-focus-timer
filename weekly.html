@@ -1,58 +1,437 @@
 <!doctype html>
 <html>
+
 <head>
-  <meta charset="utf-8" />
-  <title>Weekly Progress</title>
-  <style>
-    body {
-      margin:0; padding:12px; font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Arial,sans-serif; background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); color:#fff;
-    }
-    h1 { font-size:16px; margin:0 0 8px; font-weight:600; text-align:center; }
-    .days { display:flex; flex-direction:column; gap:6px; max-height:260px; overflow-y:auto; margin-top:4px; }
-    .day { background:rgba(255,255,255,0.15); padding:8px 10px; border:1px solid rgba(255,255,255,0.25); border-radius:6px; font-size:12px; line-height:1.3; }
-    .meta { font-size:11px; opacity:0.85; }
-    .empty { text-align:center; margin-top:40px; font-size:13px; opacity:0.9; }
-    button.close-btn { position:absolute; top:8px; right:8px; background:rgba(255,59,48,0.85); border:1px solid rgba(255,59,48,1); color:#fff; font-size:11px; font-weight:600; padding:6px 10px; border-radius:6px; cursor:pointer; }
-    button.close-btn:hover { background:rgba(255,59,48,0.95); }
-  </style>
+    <meta charset="utf-8" />
+    <title>Weekly Progress</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 16px;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-attachment: fixed;
+            background-size: cover;
+            color: #fff;
+            overflow-y: auto;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        body::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        body::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        body::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        body::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Centered fixed-width container to avoid stretching on large windows */
+        .container {
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        h1 {
+            font-size: 20px;
+            margin: 0 0 4px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .subtitle {
+            font-size: 12px;
+            opacity: 0.85;
+            font-weight: 500;
+        }
+
+        .motivation {
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        .motivation .emoji {
+            font-size: 20px;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .summary {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 12px;
+            padding: 16px 12px;
+            margin-bottom: 16px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .summary-item {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 90px;
+            padding: 8px;
+        }
+
+        .summary-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+            display: block;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+        }
+
+        .summary-value {
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 4px;
+            line-height: 1;
+            letter-spacing: -0.5px;
+        }
+
+        .summary-label {
+            font-size: 10px;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            font-weight: 700;
+        }
+
+        .days {
+            display: flex;
+            flex-direction: column;
+            gap: 6px; /* tighter gap between day cards */
+            padding-right: 4px;
+            padding-bottom: 16px;
+        }
+
+        .day {
+            background: rgba(255, 255, 255, 0.12);
+            padding: 10px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .day:hover {
+            background: rgba(255, 255, 255, 0.18);
+            border-color: rgba(255, 255, 255, 0.35);
+            transform: translateX(2px);
+        }
+
+        .day.goal-reached {
+            background: rgba(52, 199, 89, 0.2);
+            border-color: rgba(52, 199, 89, 0.4);
+        }
+
+        .day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px; /* reduce extra space above stats */
+        }
+
+        .date {
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
+        .badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+            background: rgba(52, 199, 89, 0.85);
+            border: 1px solid rgba(52, 199, 89, 1);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px; /* tighter grid gap */
+            font-size: 12px;
+        }
+
+        .stat {
+            display: grid;
+            grid-template-columns: 22px 1fr; /* compact icon + text */
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stat-icon {
+            font-size: 16px;
+            opacity: 0.9;
+            min-width: 22px;
+            text-align: center;
+        }
+
+        .stat-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.05; /* tighten label/value spacing */
+        }
+
+        .stat-label {
+            opacity: 0.75;
+            font-size: 9px; /* smaller descriptive text */
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+        }
+
+        .stat-value {
+            font-weight: 800; /* highlight the number */
+            font-size: 20px;  /* bigger number emphasis */
+            letter-spacing: -0.3px;
+        }
+
+        .empty {
+            text-align: center;
+            margin-top: 60px;
+            font-size: 14px;
+            opacity: 0.85;
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+    </style>
 </head>
+
 <body>
-  <button class="close-btn" onclick="window.close()">✖ Close</button>
-  <h1>Last 7 Days</h1>
-  <div id="content" class="days"></div>
-  <div id="empty" class="empty" style="display:none;">No record found</div>
-<script>
-  function fmtTime(seconds){
-    if(!seconds) return '0m';
-    const mins = Math.floor(seconds/60); if(mins<60) return mins+'m';
-    const hrs = (mins/60).toFixed(1); return hrs+'h';
-  }
-  async function load(){
-    try {
-      const data = await window.electronAPI?.getWeeklyData();
-      const arr = data?.days || [];
-      const content = document.getElementById('content');
-      const empty = document.getElementById('empty');
-      if(arr.length === 0){
-        empty.style.display='block';
-        return;
-      }
-      arr.forEach(d => {
-        const div = document.createElement('div');
-        div.className='day';
-        const achieved = d.achieved ?? 0;
-        const goal = d.dailyGoal ?? '-';
-        const block = d.productiveBlock ?? '-';
-        const time = fmtTime(d.productiveTimeSeconds);
-        div.innerHTML = `<strong>${d.date}</strong><br/>Achieved: ${achieved} / Goal: ${goal}<br/><span class='meta'>Block: ${block}m • Prod Time: ${time}</span>`;
-        content.appendChild(div);
-      });
-    } catch(e){
-      document.getElementById('empty').textContent='Data not found';
-      document.getElementById('empty').style.display='block';
-    }
-  }
-  load();
-</script>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Weekly Progress</h1>
+            <div class="subtitle">Last 7 Days</div>
+        </div>
+        <div id="motivation" class="motivation" style="display:none;"></div>
+        <div id="summary" class="summary" style="display:none;"></div>
+        <div id="content" class="days"></div>
+        <div id="empty" class="empty" style="display:none;">
+            <div class="empty-icon">📭</div>
+            <div>No record found</div>
+            <div style="font-size:11px; opacity:0.7; margin-top:6px;">Start a focus session to begin tracking</div>
+        </div>
+    </div>
+    <script>
+        // Inline SVG icon helper (avoids emoji rendering issues on some systems)
+        function iconSVG(name, size = 26) {
+            const stroke = 'white';
+            const common = `width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"`;            
+            switch (name) {
+                case 'target':
+                    return `<svg ${common}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>`;
+                case 'check':
+                    return `<svg ${common}><polyline points="20 6 9 17 4 12"/></svg>`;
+                case 'time':
+                    return `<svg ${common}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+                case 'block':
+                    return `<svg ${common}><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 9h6v6H9z"/></svg>`;
+                case 'status-up':
+                    return `<svg ${common}><polyline points="4 14 9 9 14 14 20 8"/><path d="M4 20h16"/></svg>`;
+                case 'status-done':
+                    return `<svg ${common}><circle cx="12" cy="12" r="10"/><polyline points="16 8 11 13 8 10"/></svg>`;
+                // Motivation icons
+                case 'fire':
+                    return `<svg ${common}><path d="M12 3c1.5 2 1.5 3.5 0 5 3-1 5 1 5 4a5 5 0 0 1-10 0c0-2 1-3.5 3-4-1-1.5-1-3 2-5z"/></svg>`;
+                case 'strong':
+                    return `<svg ${common}><path d="M6 14c3-8 9-8 12-2-1 5-4 7-7 7h-1"/><path d="M5 13c0 3 2 6 5 6"/></svg>`;
+                case 'star':
+                    return `<svg ${common}><polygon points="12 2 15 9 22 9 16.8 13.6 19 21 12 16.9 5 21 7.2 13.6 2 9 9 9"/></svg>`;
+                case 'seed':
+                    return `<svg ${common}><path d="M12 21c-3-3-5-6-5-9a5 5 0 0 1 10 0c0 3-2 6-5 9z"/><path d="M12 11V3"/></svg>`;
+                default:
+                    return `<svg ${common}></svg>`;
+            }
+        }
+        function fmtTime(seconds) {
+            if (!seconds) return '0m';
+            const mins = Math.floor(seconds / 60);
+            if (mins < 60) return mins + 'm';
+            const hrs = (mins / 60).toFixed(1);
+            return hrs + 'h';
+        }
+
+        function formatDate(dateStr) {
+            const d = new Date(dateStr + 'T00:00:00');
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            const isToday = d.toDateString() === today.toDateString();
+            const isYesterday = d.toDateString() === yesterday.toDateString();
+
+            if (isToday) return 'Today';
+            if (isYesterday) return 'Yesterday';
+
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
+        }
+
+        function getMotivation(arr) {
+            const totalAchieved = arr.reduce((sum, d) => sum + (d.achieved || 0), 0);
+            const daysWithGoal = arr.filter(d => d.achieved >= (d.dailyGoal || 0) && d.achieved > 0).length;
+            const totalTime = arr.reduce((sum, d) => sum + (d.productiveTimeSeconds || 0), 0);
+
+            if (daysWithGoal >= 5) {
+                return { emoji: '🔥', text: 'Amazing! You\'re on fire this week!' };
+            } else if (daysWithGoal >= 3) {
+                return { emoji: '💪', text: 'Great work! Keep the momentum going!' };
+            } else if (totalAchieved >= 10) {
+                return { emoji: '⭐', text: 'Solid progress! Every session counts!' };
+            } else if (totalTime > 3600) {
+                return { emoji: '🎯', text: 'You\'re building great habits!' };
+            } else if (arr.length > 0) {
+                return { emoji: '🌱', text: 'Good start! Stay consistent!' };
+            }
+            return null;
+        }
+
+        async function load() {
+            try {
+                const data = await window.electronAPI?.getWeeklyData();
+                const arr = data?.days || [];
+                const content = document.getElementById('content');
+                const empty = document.getElementById('empty');
+                const motivationEl = document.getElementById('motivation');
+                const summaryEl = document.getElementById('summary');
+
+                if (arr.length === 0) {
+                    empty.style.display = 'block';
+                    return;
+                }
+
+                // Calculate summary stats
+                const totalAchieved = arr.reduce((sum, d) => sum + (d.achieved || 0), 0);
+                const totalGoalDays = arr.filter(d => d.achieved >= (d.dailyGoal || 0) && d.achieved > 0).length;
+                const totalTime = arr.reduce((sum, d) => sum + (d.productiveTimeSeconds || 0), 0);
+
+                // Show summary
+                summaryEl.innerHTML = `
+                <div class="summary-item">
+                    <span class="summary-icon">${iconSVG('target',30)}</span>
+                    <div class="summary-value">${totalAchieved}</div>
+                    <div class="summary-label">TOTAL SESSIONS</div>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-icon">${iconSVG('check',30)}</span>
+                    <div class="summary-value">${totalGoalDays}</div>
+                    <div class="summary-label">GOALS MET</div>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-icon">${iconSVG('time',30)}</span>
+                    <div class="summary-value">${fmtTime(totalTime)}</div>
+                    <div class="summary-label">PRODUCTIVE TIME</div>
+                </div>
+      `;
+                summaryEl.style.display = 'grid';
+
+                // Show motivation
+                const motivation = getMotivation(arr);
+                if (motivation) {
+                                        const motIcon = {
+                                                '🔥':'fire',
+                                                '💪':'strong',
+                                                '⭐':'star',
+                                                '🌱':'seed'
+                                        }[motivation.emoji] || 'star';
+                                        motivationEl.innerHTML = `<span class="emoji">${iconSVG(motIcon,28)}</span>${motivation.text}`;
+                    motivationEl.style.display = 'block';
+                }
+
+                // Render days (most recent first)
+                arr.reverse().forEach(d => {
+                    const div = document.createElement('div');
+                    const achieved = d.achieved ?? 0;
+                    const goal = d.dailyGoal ?? 4;
+                    const block = d.productiveBlock ?? 60;
+                    const time = fmtTime(d.productiveTimeSeconds);
+                    const goalReached = achieved >= goal && achieved > 0;
+
+                    div.className = 'day' + (goalReached ? ' goal-reached' : '');
+
+                    const badge = goalReached ? '<span class="badge">✓ Goal</span>' : '';
+
+                                        div.innerHTML = `
+          <div class="day-header">
+            <div class="date">${formatDate(d.date)}</div>
+            ${badge}
+          </div>
+          <div class="stats">
+            <div class="stat">
+                            <div class="stat-icon">${iconSVG('target',22)}</div>
+                            <div class="stat-text">
+                                <div class="stat-value">${achieved} / ${goal}</div>
+                                <div class="stat-label">Achieved</div>
+                            </div>
+            </div>
+            <div class="stat">
+                            <div class="stat-icon">${iconSVG('time',22)}</div>
+                            <div class="stat-text">
+                                <div class="stat-value">${time}</div>
+                                <div class="stat-label">Time</div>
+                            </div>
+            </div>
+            <div class="stat">
+                            <div class="stat-icon">${iconSVG('block',22)}</div>
+                            <div class="stat-text">
+                                <div class="stat-value">${block}m</div>
+                                <div class="stat-label">Block</div>
+                            </div>
+            </div>
+            <div class="stat">
+                            <div class="stat-icon">${goalReached ? iconSVG('status-done',22) : iconSVG('status-up',22)}</div>
+                            <div class="stat-text">
+                                <div class="stat-value">${goalReached ? 'Done' : Math.max(0, goal - achieved) + ' left'}</div>
+                                <div class="stat-label">Status</div>
+                            </div>
+            </div>
+          </div>
+        `;
+                    content.appendChild(div);
+                });
+            } catch (e) {
+                document.getElementById('empty').innerHTML = '<div class="empty-icon">⚠️</div><div>Data not found</div>';
+                document.getElementById('empty').style.display = 'block';
+            }
+        }
+        load();
+    </script>
 </body>
+
 </html>

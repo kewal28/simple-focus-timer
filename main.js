@@ -153,11 +153,11 @@ function openWeeklyWindow() {
     return;
   }
   weeklyWin = new BrowserWindow({
-    width: 300,
-    height: 360,
+    width: 320,
+    height: 480,
     alwaysOnTop: true,
     frame: true,
-    resizable: false,
+    resizable: true,
     minimizable: false,
     maximizable: false,
     skipTaskbar: false,
