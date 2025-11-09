@@ -562,14 +562,33 @@ app.whenReady().then(() => {
   // Provide weekly data (last 7 days) to renderer
   ipcMain.handle('get-weekly-data', () => {
     const today = new Date();
-    const days = [];
-    for (let i = 0; i < 7; i++) {
+    const todayKeyStr = todayKey();
+    // Build last 7 days keys in ascending order (oldest -> newest)
+    const keysAsc = [];
+    for (let i = 6; i >= 0; i--) {
       const d = new Date(today.getTime() - i * 86400000);
-      const key = d.toLocaleDateString('en-CA');
+      keysAsc.push(d.toLocaleDateString('en-CA'));
+    }
+
+    const days = [];
+    let lastKnownBlock; // minutes
+
+    for (const key of keysAsc) {
       const count = store.get(`counts.${key}`, 0) || 0;
       const prodSecs = store.get(`productiveTime.${key}`, 0) || 0;
       const goal = store.get(`dailyGoals.${key}`, store.get('dailyGoal', 4));
-      const targetBlock = store.get(`productiveBlocks.${key}`, store.get('productiveBlockMinutes', 60));
+
+      // Prefer explicit snapshot for that day; otherwise carry forward last known.
+      let snapshot = store.get(`productiveBlocks.${key}`);
+      if (typeof snapshot === 'number' && snapshot > 0) {
+        lastKnownBlock = snapshot;
+      }
+      const targetBlock = (typeof snapshot === 'number' && snapshot > 0)
+        ? snapshot
+        : (key === todayKeyStr
+            ? (store.get('productiveBlockMinutes', 60) || 60)
+            : (lastKnownBlock ?? 60));
+
       // Only include if there is at least some data (count>0 or prodSecs>0 or goal defined)
       if (count > 0 || prodSecs > 0 || goal !== undefined) {
         days.push({
@@ -581,8 +600,8 @@ app.whenReady().then(() => {
         });
       }
     }
-    // If zero included days AND zero data overall, decide message downstream
-    return { days: days.sort((a,b) => a.date.localeCompare(b.date)) };
+
+    return { days };
   });
 
   // Optionally hide dock icon after a delay to allow system to register icon
