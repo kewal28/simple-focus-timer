@@ -1,0 +1,58 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Weekly Progress</title>
+  <style>
+    body {
+      margin:0; padding:12px; font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Arial,sans-serif; background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); color:#fff;
+    }
+    h1 { font-size:16px; margin:0 0 8px; font-weight:600; text-align:center; }
+    .days { display:flex; flex-direction:column; gap:6px; max-height:260px; overflow-y:auto; margin-top:4px; }
+    .day { background:rgba(255,255,255,0.15); padding:8px 10px; border:1px solid rgba(255,255,255,0.25); border-radius:6px; font-size:12px; line-height:1.3; }
+    .meta { font-size:11px; opacity:0.85; }
+    .empty { text-align:center; margin-top:40px; font-size:13px; opacity:0.9; }
+    button.close-btn { position:absolute; top:8px; right:8px; background:rgba(255,59,48,0.85); border:1px solid rgba(255,59,48,1); color:#fff; font-size:11px; font-weight:600; padding:6px 10px; border-radius:6px; cursor:pointer; }
+    button.close-btn:hover { background:rgba(255,59,48,0.95); }
+  </style>
+</head>
+<body>
+  <button class="close-btn" onclick="window.close()">✖ Close</button>
+  <h1>Last 7 Days</h1>
+  <div id="content" class="days"></div>
+  <div id="empty" class="empty" style="display:none;">No record found</div>
+<script>
+  function fmtTime(seconds){
+    if(!seconds) return '0m';
+    const mins = Math.floor(seconds/60); if(mins<60) return mins+'m';
+    const hrs = (mins/60).toFixed(1); return hrs+'h';
+  }
+  async function load(){
+    try {
+      const data = await window.electronAPI?.getWeeklyData();
+      const arr = data?.days || [];
+      const content = document.getElementById('content');
+      const empty = document.getElementById('empty');
+      if(arr.length === 0){
+        empty.style.display='block';
+        return;
+      }
+      arr.forEach(d => {
+        const div = document.createElement('div');
+        div.className='day';
+        const achieved = d.achieved ?? 0;
+        const goal = d.dailyGoal ?? '-';
+        const block = d.productiveBlock ?? '-';
+        const time = fmtTime(d.productiveTimeSeconds);
+        div.innerHTML = `<strong>${d.date}</strong><br/>Achieved: ${achieved} / Goal: ${goal}<br/><span class='meta'>Block: ${block}m • Prod Time: ${time}</span>`;
+        content.appendChild(div);
+      });
+    } catch(e){
+      document.getElementById('empty').textContent='Data not found';
+      document.getElementById('empty').style.display='block';
+    }
+  }
+  load();
+</script>
+</body>
+</html>

@@ -22,7 +22,8 @@
             justify-content: center;
             color: white;
             text-align: center;
-            position: relative; /* for top-right pause indicator */
+            position: relative;
+            /* for top-right pause indicator */
         }
 
         .timer {
@@ -34,7 +35,8 @@
             width: 100%;
             text-align: center;
             display: block;
-            padding: 0; /* no reserved space, icon is now a separate overlay */
+            padding: 0;
+            /* no reserved space, icon is now a separate overlay */
         }
 
         /* Top-right pause indicator */
@@ -113,6 +115,9 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .cancel-btn:hover {
@@ -128,7 +133,8 @@
         .pause-btn {
             margin-top: 6px;
             padding: 8px 18px;
-            background: rgba(255, 159, 10, 0.9); /* orange */
+            background: rgba(255, 159, 10, 0.9);
+            /* orange */
             border: 1px solid rgba(255, 149, 0, 1);
             border-radius: 6px;
             color: white;
@@ -136,15 +142,25 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
 
-        .pause-btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
-        .pause-btn:active { transform: translateY(0); }
+        .pause-btn:hover {
+            filter: brightness(1.05);
+            transform: translateY(-1px);
+        }
+
+        .pause-btn:active {
+            transform: translateY(0);
+        }
 
         .resume-btn {
             margin-top: 6px;
             padding: 8px 18px;
-            background: rgba(52, 199, 89, 0.9); /* green */
+            background: rgba(52, 199, 89, 0.9);
+            /* green */
             border: 1px solid rgba(48, 209, 88, 1);
             border-radius: 6px;
             color: white;
@@ -152,10 +168,19 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
 
-        .resume-btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
-        .resume-btn:active { transform: translateY(0); }
+        .resume-btn:hover {
+            filter: brightness(1.05);
+            transform: translateY(-1px);
+        }
+
+        .resume-btn:active {
+            transform: translateY(0);
+        }
 
         .hidden {
             display: none !important;
@@ -167,7 +192,7 @@
     <div id="pauseIndicator" class="hidden" aria-hidden="true">⏸</div>
     <div class="timer" id="txt">Ready</div>
     <div class="subtitle" id="subtitle">Start a productive day</div>
-    
+
     <div class="quick-start-container" id="quickStart">
         <div class="button-row">
             <button class="timer-btn" onclick="startTimer(1)">1m</button>
@@ -176,23 +201,31 @@
         </div>
     </div>
     <div class="control-row hidden" id="controlRow">
-        <button class="pause-btn" id="pauseBtn">Pause</button>
-        <button class="cancel-btn" id="cancelBtn">Cancel</button>
+        <button class="pause-btn" id="pauseBtn">
+            <span class="icon" id="pauseIcon" aria-hidden="true">⏸</span>
+            <span id="pauseLabel">Pause</span>
+        </button>
+        <button class="cancel-btn" id="cancelBtn">
+            <span class="icon" id="cancelIcon" aria-hidden="true">✖</span>
+            <span>Cancel</span>
+        </button>
     </div>
 
     <script>
         const txt = document.getElementById('txt');
         const subtitle = document.getElementById('subtitle');
-    const cancelBtn = document.getElementById('cancelBtn');
-    const pauseBtn = document.getElementById('pauseBtn');
-    const controlRow = document.getElementById('controlRow');
-    const pauseIndicator = document.getElementById('pauseIndicator');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const pauseIcon = document.getElementById('pauseIcon');
+        const pauseLabel = document.getElementById('pauseLabel');
+        const controlRow = document.getElementById('controlRow');
+        const pauseIndicator = document.getElementById('pauseIndicator');
         const quickStart = document.getElementById('quickStart');
 
         let isRunning = false;
-    let dailyGoalReached = false;
+        let dailyGoalReached = false;
         let currentTarget = 60; // Default target
-    let isPaused = false;
+        let isPaused = false;
 
         function fmt(s) {
             const m = String(Math.floor(s / 60)).padStart(2, '0');
@@ -232,14 +265,15 @@
                 quickStart.classList.add('hidden');
                 controlRow.classList.remove('hidden');
                 isRunning = true;
+                // Always ensure button is in Pause state when running
                 if (isPaused) {
-                    // If ticking, we are not paused anymore
                     isPaused = false;
-                    pauseBtn.textContent = 'Pause';
-                    pauseBtn.classList.remove('resume-btn');
-                    pauseBtn.classList.add('pause-btn');
                     pauseIndicator.classList.add('hidden');
                 }
+                pauseLabel.textContent = 'Pause';
+                pauseIcon.textContent = '⏸';
+                pauseBtn.classList.remove('resume-btn');
+                pauseBtn.classList.add('pause-btn');
             } else {
                 txt.textContent = 'Ready';
                 subtitle.textContent = 'Start a productive day';
@@ -276,7 +310,8 @@
             subtitle.classList.add('hidden');
             quickStart.classList.add('hidden');
             controlRow.classList.remove('hidden');
-            pauseBtn.textContent = 'Resume';
+            pauseLabel.textContent = 'Resume';
+            pauseIcon.textContent = '▶';
             pauseBtn.classList.remove('pause-btn');
             pauseBtn.classList.add('resume-btn');
             pauseIndicator.classList.remove('hidden');
@@ -288,7 +323,8 @@
             subtitle.classList.add('hidden');
             quickStart.classList.add('hidden');
             controlRow.classList.remove('hidden');
-            pauseBtn.textContent = 'Pause';
+            pauseLabel.textContent = 'Pause';
+            pauseIcon.textContent = '⏸';
             pauseBtn.classList.remove('resume-btn');
             pauseBtn.classList.add('pause-btn');
             pauseIndicator.classList.add('hidden');
@@ -312,7 +348,7 @@
             const remaining = Math.max(0, Number(info?.remaining ?? Math.max(0, dailyGoal - done)));
             const reached = info?.reached || false;
             const formattedTime = info?.formattedTime || '';
-            
+
             // When daily goal is reached, show productive time
             if (reached && formattedTime) {
                 txt.textContent = 'Great!!';
@@ -370,6 +406,18 @@
                     subtitle.textContent = 'Start a productive day';
                 }, 2000);
             }
+        });
+
+        // Day changed event: reset UI cleanly
+        window.electronAPI?.onDayChanged((info) => {
+            isRunning = false;
+            isPaused = false;
+            pauseIndicator.classList.add('hidden');
+            controlRow.classList.add('hidden');
+            quickStart.classList.remove('hidden');
+            txt.textContent = 'Ready';
+            subtitle.textContent = 'Start a productive day';
+            subtitle.classList.remove('hidden');
         });
     </script>
 </body>

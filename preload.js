@@ -9,8 +9,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
   onTargetUpdated: (cb) => ipcRenderer.on("target-updated", (_, minutes) => cb(minutes)),
   onPaused: (cb) => ipcRenderer.on("paused", (_, remainingSeconds) => cb(remainingSeconds)),
   onResumed: (cb) => ipcRenderer.on("resumed", () => cb()),
+  onDayChanged: (cb) => ipcRenderer.on("day-changed", (_, info) => cb(info)),
   cancelTimer: () => ipcRenderer.send("cancel-timer"),
   startTimer: (minutes) => ipcRenderer.send("start-timer", minutes),
   pauseTimer: () => ipcRenderer.send("pause-timer"),
   resumeTimer: () => ipcRenderer.send("resume-timer"),
+  getWeeklyData: () => ipcRenderer.invoke('get-weekly-data'),
 });

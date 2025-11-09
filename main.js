@@ -25,6 +25,24 @@ let isPaused = false;
 let pausedRemainingSeconds = 0; // seconds left when paused
 
 let appIconNative = null; // NativeImage used for notifications/about/dock
+// Track current date to detect rollover
+let currentDateKey = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD local
+
+function checkDateRollover(force = false) {
+  const today = todayKey();
+  if (force || today !== currentDateKey) {
+    currentDateKey = today;
+    // Notify renderer of day change
+    safeSend("day-changed", { date: today });
+    // Recompute goal info for new day
+    checkAndNotifyGoal();
+    // Don't forcibly reset active timer; only reset UI when idle
+    if (!countdownInterval && !isPaused) {
+      safeSend("tick", 0);
+    }
+    updateTrayTitle();
+  }
+}
 
 function isWindowValid() {
   return win && !win.isDestroyed();
@@ -128,8 +146,34 @@ function createWindow() {
   });
 }
 
+let weeklyWin = null;
+function openWeeklyWindow() {
+  if (weeklyWin && !weeklyWin.isDestroyed()) {
+    weeklyWin.focus();
+    return;
+  }
+  weeklyWin = new BrowserWindow({
+    width: 300,
+    height: 360,
+    alwaysOnTop: true,
+    frame: true,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    skipTaskbar: false,
+    title: "Weekly Progress",
+    webPreferences: {
+      contextIsolation: true,
+      preload: path.join(__dirname, "preload.js"),
+    },
+  });
+  weeklyWin.loadFile("weekly.html");
+  weeklyWin.on('closed', () => { weeklyWin = null; });
+}
+
 function todayKey() {
-  return new Date().toISOString().slice(0, 10);
+  // Use local date instead of UTC slice to avoid timezone day mismatch
+  return new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
 }
 
 function doneToday() {
@@ -207,6 +251,7 @@ function startTimer(mins) {
     isPaused = false;
     pausedRemainingSeconds = 0;
   }
+  checkDateRollover(); // ensure starting uses fresh day
   selectedMinutes = mins ?? selectedMinutes;
   endAt = Date.now() + selectedMinutes * 60_000;
 
@@ -216,6 +261,18 @@ function startTimer(mins) {
   updateTrayMenu(); // Update menu to enable cancel button
 
   countdownInterval = setInterval(() => {
+    // If date rolled over mid-session, count completion toward previous day and start fresh accounting.
+    const currentKeyNow = todayKey();
+    if (currentKeyNow !== currentDateKey) {
+      // Session started on previous day but still running after midnight.
+      // We finish the session and attribute remaining time to the NEW day.
+      // First, adjust currentDateKey so incIfProductive() uses correct day if session completes now.
+      currentDateKey = currentKeyNow;
+      // Update tray/UI and goal info immediately for new day context.
+      checkAndNotifyGoal();
+      updateTrayTitle();
+      safeSend("day-changed", { date: currentKeyNow });
+    }
     const left = endAt - Date.now();
     if (left <= 0) {
       clearInterval(countdownInterval);
@@ -267,10 +324,18 @@ function pauseTimer() {
 
 function resumeTimer() {
   if (!isPaused || pausedRemainingSeconds <= 0) return;
+  checkDateRollover(); // just in case resume crosses midnight
   isPaused = false;
   endAt = Date.now() + pausedRemainingSeconds * 1000;
   // restart interval
   countdownInterval = setInterval(() => {
+    const currentKeyNow = todayKey();
+    if (currentKeyNow !== currentDateKey) {
+      currentDateKey = currentKeyNow;
+      checkAndNotifyGoal();
+      updateTrayTitle();
+      safeSend("day-changed", { date: currentKeyNow });
+    }
     const left = endAt - Date.now();
     if (left <= 0) {
       clearInterval(countdownInterval);
@@ -305,6 +370,8 @@ function setProductiveBlock(m) {
     // Don't reset productive time - it tracks actual work done
   }
   store.set("productiveBlockMinutes", m);
+  // Persist today's productive block target for historical reporting
+  try { store.set(`productiveBlocks.${todayKey()}`, m); } catch {}
   updateTrayMenu();
   checkAndNotifyGoal();
   // Send updated target to popup window
@@ -313,6 +380,8 @@ function setProductiveBlock(m) {
 
 function setDailyGoal(g) {
   store.set("dailyGoal", g);
+  // Persist today's goal for historical reporting
+  try { store.set(`dailyGoals.${todayKey()}`, g); } catch {}
   updateTrayMenu();
 }
 
@@ -341,6 +410,13 @@ function buildTrayMenu() {
         checked: store.get("dailyGoal", 4) === g,
         click: () => setDailyGoal(g),
       })),
+    },
+    { type: "separator" },
+    {
+      label: "Weekly Progress",
+      click: () => {
+        openWeeklyWindow();
+      }
     },
     { type: "separator" },
     {
@@ -459,6 +535,12 @@ app.whenReady().then(() => {
   createWindow();
   createTray();
 
+  // Backfill today's productive block & daily goal snapshot for history
+  try {
+    store.set(`productiveBlocks.${todayKey()}`, store.get("productiveBlockMinutes", 60));
+    store.set(`dailyGoals.${todayKey()}`, store.get("dailyGoal", 4));
+  } catch {}
+
   // Handle cancel timer from window
   ipcMain.on("cancel-timer", () => {
     cancelTimer();
@@ -477,6 +559,32 @@ app.whenReady().then(() => {
     resumeTimer();
   });
 
+  // Provide weekly data (last 7 days) to renderer
+  ipcMain.handle('get-weekly-data', () => {
+    const today = new Date();
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(today.getTime() - i * 86400000);
+      const key = d.toLocaleDateString('en-CA');
+      const count = store.get(`counts.${key}`, 0) || 0;
+      const prodSecs = store.get(`productiveTime.${key}`, 0) || 0;
+      const goal = store.get(`dailyGoals.${key}`, store.get('dailyGoal', 4));
+      const targetBlock = store.get(`productiveBlocks.${key}`, store.get('productiveBlockMinutes', 60));
+      // Only include if there is at least some data (count>0 or prodSecs>0 or goal defined)
+      if (count > 0 || prodSecs > 0 || goal !== undefined) {
+        days.push({
+          date: key,
+          achieved: count,
+          productiveTimeSeconds: prodSecs,
+          dailyGoal: goal,
+          productiveBlock: targetBlock,
+        });
+      }
+    }
+    // If zero included days AND zero data overall, decide message downstream
+    return { days: days.sort((a,b) => a.date.localeCompare(b.date)) };
+  });
+
   // Optionally hide dock icon after a delay to allow system to register icon
   if (app.dock) {
     setTimeout(() => {
@@ -489,6 +597,13 @@ app.whenReady().then(() => {
   console.log("Look for the timer icon in your menu bar (top-right)");
   console.log("Click it to start a focus session");
   console.log("=".repeat(50));
+
+  // Idle rollover check every 60s when no active timer
+  setInterval(() => {
+    if (!countdownInterval && !isPaused) {
+      checkDateRollover();
+    }
+  }, 60_000);
 });
 
 app.on("window-all-closed", () => {
