@@ -34,3 +34,6 @@ dist_electron/
 # Cache
 .cache/
 .electron/
+
+# Platform artifacts
+*.dmg
