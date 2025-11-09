@@ -22,7 +22,7 @@
             justify-content: center;
             color: white;
             text-align: center;
-            padding: 10px;
+            position: relative; /* for top-right pause indicator */
         }
 
         .timer {
@@ -30,6 +30,22 @@
             font-weight: 700;
             letter-spacing: 2px;
             margin-bottom: 3px;
+            box-sizing: border-box;
+            width: 100%;
+            text-align: center;
+            display: block;
+            padding: 0; /* no reserved space, icon is now a separate overlay */
+        }
+
+        /* Top-right pause indicator */
+        #pauseIndicator {
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            font-size: 16px;
+            line-height: 1;
+            opacity: 0.95;
+            pointer-events: none;
         }
 
         .subtitle {
@@ -79,6 +95,13 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
+        .control-row {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            margin-top: 6px;
+        }
+
         .cancel-btn {
             margin-top: 6px;
             padding: 8px 25px;
@@ -102,6 +125,38 @@
             transform: translateY(0);
         }
 
+        .pause-btn {
+            margin-top: 6px;
+            padding: 8px 18px;
+            background: rgba(255, 159, 10, 0.9); /* orange */
+            border: 1px solid rgba(255, 149, 0, 1);
+            border-radius: 6px;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .pause-btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
+        .pause-btn:active { transform: translateY(0); }
+
+        .resume-btn {
+            margin-top: 6px;
+            padding: 8px 18px;
+            background: rgba(52, 199, 89, 0.9); /* green */
+            border: 1px solid rgba(48, 209, 88, 1);
+            border-radius: 6px;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .resume-btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
+        .resume-btn:active { transform: translateY(0); }
+
         .hidden {
             display: none !important;
         }
@@ -109,6 +164,7 @@
 </head>
 
 <body>
+    <div id="pauseIndicator" class="hidden" aria-hidden="true">⏸</div>
     <div class="timer" id="txt">Ready</div>
     <div class="subtitle" id="subtitle">Start a productive day</div>
     
@@ -119,18 +175,24 @@
             <button class="timer-btn" onclick="startTimer(60)">60m</button>
         </div>
     </div>
-
-    <button class="cancel-btn hidden" id="cancelBtn">Cancel</button>
+    <div class="control-row hidden" id="controlRow">
+        <button class="pause-btn" id="pauseBtn">Pause</button>
+        <button class="cancel-btn" id="cancelBtn">Cancel</button>
+    </div>
 
     <script>
         const txt = document.getElementById('txt');
         const subtitle = document.getElementById('subtitle');
-        const cancelBtn = document.getElementById('cancelBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const controlRow = document.getElementById('controlRow');
+    const pauseIndicator = document.getElementById('pauseIndicator');
         const quickStart = document.getElementById('quickStart');
 
         let isRunning = false;
-        let dailyGoalReached = false;
+    let dailyGoalReached = false;
         let currentTarget = 60; // Default target
+    let isPaused = false;
 
         function fmt(s) {
             const m = String(Math.floor(s / 60)).padStart(2, '0');
@@ -146,27 +208,47 @@
             window.electronAPI?.cancelTimer();
         });
 
+        pauseBtn.addEventListener('click', () => {
+            if (!isPaused) {
+                window.electronAPI?.pauseTimer();
+            } else {
+                window.electronAPI?.resumeTimer();
+            }
+        });
+
         window.electronAPI?.onTick((s) => {
             if (s <= 0) {
                 txt.textContent = 'Ready';
                 subtitle.textContent = 'Start a productive day';
                 subtitle.classList.remove('hidden');
                 quickStart.classList.remove('hidden');
-                cancelBtn.classList.add('hidden');
+                controlRow.classList.add('hidden');
                 isRunning = false;
+                isPaused = false;
+                pauseIndicator.classList.add('hidden');
             } else if (s > 0) {
                 txt.textContent = fmt(s);
                 subtitle.classList.add('hidden');
                 quickStart.classList.add('hidden');
-                cancelBtn.classList.remove('hidden');
+                controlRow.classList.remove('hidden');
                 isRunning = true;
+                if (isPaused) {
+                    // If ticking, we are not paused anymore
+                    isPaused = false;
+                    pauseBtn.textContent = 'Pause';
+                    pauseBtn.classList.remove('resume-btn');
+                    pauseBtn.classList.add('pause-btn');
+                    pauseIndicator.classList.add('hidden');
+                }
             } else {
                 txt.textContent = 'Ready';
                 subtitle.textContent = 'Start a productive day';
                 subtitle.classList.remove('hidden');
                 quickStart.classList.remove('hidden');
-                cancelBtn.classList.add('hidden');
+                controlRow.classList.add('hidden');
                 isRunning = false;
+                isPaused = false;
+                pauseIndicator.classList.add('hidden');
             }
         });
 
@@ -174,14 +256,42 @@
             txt.textContent = 'Canceled';
             subtitle.classList.add('hidden');
             quickStart.classList.add('hidden');
-            cancelBtn.classList.add('hidden');
+            controlRow.classList.add('hidden');
             isRunning = false;
+            isPaused = false;
+            pauseIndicator.classList.add('hidden');
             setTimeout(() => {
                 txt.textContent = 'Ready';
                 subtitle.textContent = 'Start a productive day';
                 subtitle.classList.remove('hidden');
                 quickStart.classList.remove('hidden');
             }, 2000);
+        });
+
+        // Pause/Resume events
+        window.electronAPI?.onPaused((remaining) => {
+            isPaused = true;
+            isRunning = false;
+            txt.textContent = fmt(remaining);
+            subtitle.classList.add('hidden');
+            quickStart.classList.add('hidden');
+            controlRow.classList.remove('hidden');
+            pauseBtn.textContent = 'Resume';
+            pauseBtn.classList.remove('pause-btn');
+            pauseBtn.classList.add('resume-btn');
+            pauseIndicator.classList.remove('hidden');
+        });
+
+        window.electronAPI?.onResumed(() => {
+            isPaused = false;
+            isRunning = true;
+            subtitle.classList.add('hidden');
+            quickStart.classList.add('hidden');
+            controlRow.classList.remove('hidden');
+            pauseBtn.textContent = 'Pause';
+            pauseBtn.classList.remove('resume-btn');
+            pauseBtn.classList.add('pause-btn');
+            pauseIndicator.classList.add('hidden');
         });
 
         window.electronAPI?.onGoalReached((reached) => {

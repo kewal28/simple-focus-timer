@@ -20,6 +20,10 @@ let win,
   endAt = null,
   selectedMinutes = 60;
 
+// Pause state
+let isPaused = false;
+let pausedRemainingSeconds = 0; // seconds left when paused
+
 let appIconNative = null; // NativeImage used for notifications/about/dock
 
 function isWindowValid() {
@@ -181,7 +185,12 @@ function checkAndNotifyGoal() {
 function updateTrayTitle() {
   const dailyGoal = store.get("dailyGoal", 4);
   const progress = `${doneToday()}/${dailyGoal}`;
-  if (countdownInterval) {
+  if (isPaused) {
+    const left = Math.max(0, Math.round(pausedRemainingSeconds));
+    const mm = String(Math.floor(left / 60)).padStart(2, "0");
+    const ss = String(left % 60).padStart(2, "0");
+    tray.setTitle(`⏸ ${mm}:${ss} • ${progress}`);
+  } else if (countdownInterval) {
     const left = Math.max(0, Math.round((endAt - Date.now()) / 1000));
     const mm = String(Math.floor(left / 60)).padStart(2, "0");
     const ss = String(left % 60).padStart(2, "0");
@@ -193,6 +202,11 @@ function updateTrayTitle() {
 
 function startTimer(mins) {
   if (countdownInterval) return;
+  // If starting fresh while paused, clear pause state
+  if (isPaused) {
+    isPaused = false;
+    pausedRemainingSeconds = 0;
+  }
   selectedMinutes = mins ?? selectedMinutes;
   endAt = Date.now() + selectedMinutes * 60_000;
 
@@ -226,13 +240,60 @@ function startTimer(mins) {
 }
 
 function cancelTimer() {
-  if (!countdownInterval) return;
-  clearInterval(countdownInterval);
-  countdownInterval = null;
+  if (!countdownInterval && !isPaused) return;
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+    countdownInterval = null;
+  }
   endAt = null;
+  isPaused = false;
+  pausedRemainingSeconds = 0;
   safeSend("cancelled");
   updateTrayTitle();
   updateTrayMenu(); // Update menu to disable cancel button
+}
+
+function pauseTimer() {
+  if (!countdownInterval || isPaused) return;
+  const left = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
+  pausedRemainingSeconds = left;
+  isPaused = true;
+  clearInterval(countdownInterval);
+  countdownInterval = null;
+  safeSend("paused", pausedRemainingSeconds);
+  updateTrayTitle();
+  updateTrayMenu();
+}
+
+function resumeTimer() {
+  if (!isPaused || pausedRemainingSeconds <= 0) return;
+  isPaused = false;
+  endAt = Date.now() + pausedRemainingSeconds * 1000;
+  // restart interval
+  countdownInterval = setInterval(() => {
+    const left = endAt - Date.now();
+    if (left <= 0) {
+      clearInterval(countdownInterval);
+      countdownInterval = null;
+      safeSend("timer-complete", selectedMinutes);
+      safeSend("tick", 0);
+      incIfProductive();
+      updateTrayMenu();
+      try {
+        new Notification({
+          title: "Focus done!",
+          body: `${selectedMinutes} min complete`,
+          icon: appIconNative || undefined,
+        }).show();
+      } catch {}
+    } else {
+      safeSend("tick", Math.ceil(left / 1000));
+      updateTrayTitle();
+    }
+  }, 1000);
+  safeSend("resumed");
+  updateTrayTitle();
+  updateTrayMenu();
 }
 
 function setProductiveBlock(m) {
@@ -406,6 +467,14 @@ app.whenReady().then(() => {
   // Handle start timer from window
   ipcMain.on("start-timer", (event, minutes) => {
     startTimer(minutes);
+  });
+
+  // Handle pause/resume from window
+  ipcMain.on("pause-timer", () => {
+    pauseTimer();
+  });
+  ipcMain.on("resume-timer", () => {
+    resumeTimer();
   });
 
   // Optionally hide dock icon after a delay to allow system to register icon
